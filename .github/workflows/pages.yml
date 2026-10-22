@@ -1,0 +1,44 @@
+name: Publish Contra 2 v9
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/configure-pages@v5
+      - name: Restore verified static game files
+        run: |
+          mkdir -p _site
+          unzip -q site.zip -d _site
+          unzip -q windows-download.zip -d _site
+          unzip -q source-download.zip -d _site
+          test -f _site/index.html
+          echo '1e0bd4c98a7c2fa0fbf2c32963897f84f395fa43c49ad1ad76526658c446445c  _site/assets/contra2-v9-1e0bd4c9.nes' | sha256sum -c -
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish game
+        id: deployment
+        uses: actions/deploy-pages@v4
